@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detecția Ultrasonică a Stresului la Plante — Proiect de Cercetare</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f7f6f2;
+    --bg-alt: #ffffff;
+    --ink: #181a17;
+    --ink-soft: #3d4039;
+    --ink-muted: #6b7069;
+    --green-deep: #1a3d28;
+    --green-mid: #2e6644;
+    --green-bright: #3a8c58;
+    --green-light: #d4ead9;
+    --green-pale: #edf5ef;
+    --accent: #4caf78;
+    --warn: #c07c30;
+    --rule: #d8d7d2;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'DM Serif Display', serif;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --radius: 4px;
+    --shadow: 0 2px 24px rgba(26,61,40,0.08);
+    --shadow-lg: 0 8px 48px rgba(26,61,40,0.12);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; font-size: 16px; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── SCROLL ANIMATIONS ── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(28px);
+    transition: opacity 0.7s cubic-bezier(.22,.68,0,1.2), transform 0.7s cubic-bezier(.22,.68,0,1.2);
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(247,246,242,0.94);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--rule);
+    padding: 0 clamp(1rem, 5vw, 4rem);
+    height: 60px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-brand {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--green-mid);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .nav-links {
+    display: flex; gap: 2rem; list-style: none;
+  }
+  .nav-links a {
+    font-size: 0.8rem;
+    color: var(--ink-muted);
+    text-decoration: none;
+    letter-spacing: 0.04em;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--green-mid); }
+  @media (max-width: 640px) { .nav-links { display: none; } }
+
+  /* ── CONTAINERS ── */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 clamp(1.25rem, 6vw, 4rem);
+  }
+  .container-narrow { max-width: 760px; margin: 0 auto; padding: 0 clamp(1.25rem, 6vw, 4rem); }
+
+  /* ── SECTION ── */
+  section { padding: clamp(5rem, 10vw, 9rem) 0; }
+  section + section { border-top: 1px solid var(--rule); }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--green-bright);
+    display: block;
+    margin-bottom: 1.25rem;
+  }
+  h2.section-title {
+    font-family: var(--serif);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 400;
+    color: var(--green-deep);
+    line-height: 1.15;
+    margin-bottom: 1.5rem;
+  }
+  h3.sub-title {
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    font-weight: 400;
+    color: var(--green-deep);
+    margin-bottom: 0.75rem;
+  }
+  p.lead {
+    font-size: 1.1rem;
+    color: var(--ink-soft);
+    line-height: 1.75;
+    margin-bottom: 1.5rem;
+  }
+  p.body-text {
+    font-size: 0.975rem;
+    color: var(--ink-soft);
+    line-height: 1.8;
+    margin-bottom: 1rem;
+  }
+
+  /* ── HERO ── */
+  #hero {
+    min-height: 100vh;
+    background: var(--green-deep);
+    display: flex; flex-direction: column;
+    justify-content: center; align-items: flex-start;
+    padding: clamp(6rem, 12vw, 10rem) clamp(1.25rem, 8vw, 6rem);
+    position: relative;
+    overflow: hidden;
+    border-top: none;
+  }
+  #hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(ellipse 70% 60% at 75% 50%, rgba(58,140,88,0.18) 0%, transparent 65%),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 80px),
+      repeating-linear-gradient(0deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 80px);
+    pointer-events: none;
+  }
+  .hero-tag {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(76,175,120,0.35);
+    padding: 0.35rem 0.9rem;
+    border-radius: 2px;
+    margin-bottom: 2.5rem;
+    display: inline-block;
+  }
+  #hero h1 {
+    font-family: var(--serif);
+    font-size: clamp(2.2rem, 5vw, 4.2rem);
+    color: #ffffff;
+    font-weight: 400;
+    line-height: 1.1;
+    max-width: 820px;
+    margin-bottom: 1.75rem;
+  }
+  #hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+  .hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: rgba(255,255,255,0.65);
+    max-width: 580px;
+    line-height: 1.7;
+    margin-bottom: 3rem;
+  }
+  .hero-fact {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-left: 3px solid var(--accent);
+    padding: 1.1rem 1.5rem;
+    border-radius: var(--radius);
+    max-width: 540px;
+    margin-bottom: 3rem;
+  }
+  .hero-fact p {
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.65;
+  }
+  .hero-fact strong { color: #ffffff; }
+  .hero-stats {
+    display: flex; gap: clamp(1.5rem, 4vw, 3.5rem); flex-wrap: wrap;
+  }
+  .hero-stat .number {
+    font-family: var(--mono);
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    color: var(--accent);
+    display: block;
+    line-height: 1;
+    margin-bottom: 0.35rem;
+  }
+  .hero-stat .label {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── WAVEFORM ANIMATION ── */
+  .waveform-container {
+    position: absolute; right: 0; top: 50%;
+    transform: translateY(-50%);
+    width: 45%; height: 280px;
+    opacity: 0.22;
+    pointer-events: none;
+  }
+  .wave-svg { width: 100%; height: 100%; }
+  @media (max-width: 768px) { .waveform-container { display: none; } }
+
+  /* ── PROBLEM ── */
+  #problema { background: var(--bg); }
+  .problem-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  .problem-card {
+    background: var(--bg-alt);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 2rem 1.75rem;
+    position: relative;
+    overflow: hidden;
+    transition: box-shadow 0.3s, transform 0.3s;
+  }
+  .problem-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-3px);
+  }
+  .problem-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--warn), transparent);
+  }
+  .problem-icon {
+    font-size: 1.75rem; margin-bottom: 1rem;
+  }
+  .problem-card h3 {
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--ink);
+    margin-bottom: 0.6rem;
+  }
+  .problem-card p {
+    font-size: 0.875rem;
+    color: var(--ink-muted);
+    line-height: 1.7;
+  }
+  .stat-callout {
+    margin-top: 3.5rem;
+    background: var(--green-pale);
+    border: 1px solid var(--green-light);
+    border-radius: var(--radius);
+    padding: 2rem 2.5rem;
+    display: flex; gap: 3rem; flex-wrap: wrap; align-items: center;
+  }
+  .stat-callout .big-stat { font-family: var(--mono); font-size: 3.5rem; color: var(--green-mid); line-height: 1; }
+  .stat-callout p { font-size: 0.9rem; color: var(--ink-soft); max-width: 420px; }
+
+  /* ── STIINTA ── */
+  #stiinta { background: var(--bg-alt); }
+  .science-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+    margin-top: 3rem;
+  }
+  @media (max-width: 720px) { .science-grid { grid-template-columns: 1fr; gap: 2.5rem; } }
+  .info-block {
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .info-block h4 {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--green-bright);
+    margin-bottom: 0.6rem;
+  }
+  .info-block p { font-size: 0.9rem; color: var(--ink-soft); line-height: 1.75; }
+  .cavitation-diagram {
+    background: var(--green-deep);
+    border-radius: var(--radius);
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .cavitation-diagram h4 {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 1.5rem;
+  }
+
+  /* ── INOVATIE ── */
+  #inovatie { background: var(--bg); }
+  .innovation-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.25rem;
+    margin-top: 3rem;
+  }
+  .innovation-card {
+    background: var(--bg-alt);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1.75rem 1.5rem;
+    transition: border-color 0.3s;
+  }
+  .innovation-card:hover { border-color: var(--green-bright); }
+  .inno-number {
+    font-family: var(--mono);
+    font-size: 2rem;
+    color: var(--dark-light);
+    display: block;
+    line-height: 1;
+    margin-bottom: 0.75rem;
+  }
+  .innovation-card h3 {
+    font-size: 0.95rem; font-weight: 600;
+    color: var(--green-deep); margin-bottom: 0.5rem;
+  }
+  .innovation-card p { font-size: 0.85rem; color: var(--ink-muted); line-height: 1.7; }
+
+  /* ── SISTEM ── */
+  #sistem { background: var(--bg-alt); }
+  .system-schema {
+    margin-top: 3.5rem;
+    background: var(--ink);
+    border-radius: 8px;
+    padding: clamp(1.5rem, 4vw, 3rem);
+    overflow-x: auto;
+  }
+  .schema-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 2rem;
+  }
+  .pipeline {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    min-width: 680px;
+  }
+  .pipe-node {
+    flex: 1;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    position: relative;
+    transition: background 0.3s;
+    cursor: default;
+  }
+  .pipe-node:hover { background: rgba(76,175,120,0.1); border-color: rgba(76,175,120,0.4); }
+  .pipe-node .node-icon {
+    font-size: 1.6rem; display: block; margin-bottom: 0.5rem;
+  }
+  .pipe-node .node-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: block;
+    margin-bottom: 0.4rem;
+  }
+  .pipe-node .node-desc {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.5;
+  }
+  .pipe-node .node-spec {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: rgba(76,175,120,0.8);
+    margin-top: 0.5rem;
+    display: block;
+  }
+  .pipe-arrow {
+    display: flex; align-items: center;
+    padding: 0 0.4rem; flex-shrink: 0;
+    color: rgba(255,255,255,0.25);
+    font-size: 1.2rem;
+  }
+  .processing-block {
+    margin-top: 2rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    padding: 1.5rem 2rem;
+  }
+  .processing-block .pb-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    margin-bottom: 1.25rem;
+  }
+  .proc-steps {
+    display: flex; gap: 1rem; flex-wrap: wrap;
+  }
+  .proc-step {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.7);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .proc-step .step-num {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--accent);
+    background: rgba(76,175,120,0.15);
+    padding: 0.15rem 0.4rem;
+    border-radius: 2px;
+  }
+
+  /* ── EXPERIMENT ── */
+  #experiment { background: var(--bg); }
+  .experiment-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem;
+    margin-top: 3rem;
+  }
+  @media (max-width: 640px) { .experiment-grid { grid-template-columns: 1fr; } }
+  .exp-group {
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg-alt);
+    transition: box-shadow 0.3s;
+  }
+  .exp-group:hover { box-shadow: var(--shadow); }
+  .exp-header {
+    padding: 1rem 1.25rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+  .exp-group.normal .exp-header { background: #e8f5e9; color: #2e6644; }
+  .exp-group.hydric .exp-header { background: #fff3e0; color: #c07c30; }
+  .exp-group.mec .exp-header { background: #fce4ec; color: #c2185b; }
+  .exp-body { padding: 1.25rem; }
+  .exp-body p { font-size: 0.85rem; color: var(--ink-muted); line-height: 1.7; }
+  .exp-body ul { font-size: 0.85rem; color: var(--ink-muted); padding-left: 1.1rem; }
+  .exp-body li { margin-bottom: 0.3rem; }
+  .mini-bar { height: 4px; border-radius: 2px; margin-top: 1rem; }
+  .exp-group.normal .mini-bar { background: linear-gradient(90deg, #4caf78 30%, #d4ead9 30%); }
+  .exp-group.hydric .mini-bar { background: linear-gradient(90deg, #f4a843 75%, #ffe0b2 75%); }
+  .exp-group.mec .mini-bar { background: linear-gradient(90deg, #e57373 90%, #fce4ec 90%); }
+  .timeline {
+    margin-top: 3.5rem;
+    position: relative;
+    padding-left: 2rem;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute; left: 0; top: 0; bottom: 0;
+    width: 2px; background: var(--green-light);
+  }
+  .timeline-item {
+    position: relative; margin-bottom: 2rem; padding-left: 1.5rem;
+  }
+  .timeline-item::before {
+    content: '';
+    position: absolute; left: -1.96rem; top: 0.35rem;
+    width: 10px; height: 10px;
+    background: var(--green-bright);
+    border-radius: 50%;
+    border: 2px solid var(--bg);
+  }
+  .timeline-item h4 { font-size: 0.9rem; font-weight: 600; color: var(--ink); margin-bottom: 0.25rem; }
+  .timeline-item p { font-size: 0.85rem; color: var(--ink-muted); }
+
+  /* ── REZULTATE ── */
+  #rezultate { background: var(--bg-alt); }
+  .charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 2rem;
+    margin-top: 3rem;
+  }
+  .chart-card {
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+  }
+  .chart-card h4 {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--ink-muted);
+    margin-bottom: 1.25rem;
+  }
+  .chart-wrapper { position: relative; height: 220px; }
+  .conclusion-box {
+    margin-top: 3rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+  .concl-item {
+    background: var(--green-deep);
+    color: #fff;
+    padding: 1.5rem;
+    border-radius: var(--radius);
+  }
+  .concl-item .concl-num {
+    font-family: var(--mono);
+    font-size: 2.2rem;
+    color: var(--accent);
+    line-height: 1;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+  .concl-item p { font-size: 0.85rem; color: rgba(255,255,255,0.7); line-height: 1.6; }
+
+  /* ── APLICATII ── */
+  #aplicatii { background: var(--bg); }
+  .app-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.25rem;
+    margin-top: 3rem;
+  }
+  .app-card {
+    background: var(--bg-alt);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1.75rem 1.5rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+  }
+  .app-icon { font-size: 2rem; }
+  .app-card h3 { font-size: 1rem; font-weight: 600; color: var(--green-deep); }
+  .app-card p { font-size: 0.875rem; color: var(--ink-muted); line-height: 1.7; flex: 1; }
+  .app-tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--green-bright);
+    background: var(--green-pale);
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+    display: inline-block;
+  }
+
+  /* ── DE CE CONTEAZA ── */
+  #impact { background: var(--green-deep); border-top: none; }
+  #impact .section-label { color: rgba(76,175,120,0.7); }
+  #impact h2.section-title { color: #ffffff; }
+  .impact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 2rem;
+    margin-top: 3.5rem;
+  }
+  .impact-item .impact-num {
+    font-family: var(--mono);
+    font-size: clamp(2rem, 4vw, 3rem);
+    color: var(--accent);
+    display: block; line-height: 1;
+    margin-bottom: 0.5rem;
+  }
+  .impact-item h3 { font-size: 1rem; font-weight: 600; color: #ffffff; margin-bottom: 0.4rem; }
+  .impact-item p { font-size: 0.85rem; color: rgba(255,255,255,0.55); line-height: 1.65; }
+  .impact-divider { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 3.5rem 0; }
+  .impact-quote {
+    font-family: var(--serif);
+    font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+    font-style: italic;
+    color: rgba(255,255,255,0.75);
+    text-align: center;
+    line-height: 1.5;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .impact-quote strong { color: var(--accent); font-style: normal; }
+
+  /* ── VIITOR ── */
+  #viitor { background: var(--bg-alt); }
+  .future-list {
+    margin-top: 2.5rem;
+    display: flex; flex-direction: column; gap: 1rem;
+  }
+  .future-item {
+    display: flex; gap: 1.5rem; align-items: flex-start;
+    padding: 1.5rem;
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    transition: border-color 0.3s;
+  }
+  .future-item:hover { border-color: var(--green-bright); }
+  .future-phase {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--green-bright);
+    background: var(--green-pale);
+    padding: 0.25rem 0.6rem;
+    border-radius: 2px;
+    white-space: nowrap;
+    margin-top: 0.1rem;
+  }
+  .future-item h4 { font-size: 0.95rem; font-weight: 600; color: var(--ink); margin-bottom: 0.35rem; }
+  .future-item p { font-size: 0.875rem; color: var(--ink-muted); line-height: 1.7; }
+
+  /* ── FOOTER ── */
+  footer {
+    background: var(--ink);
+    padding: 3rem clamp(1.25rem, 6vw, 4rem);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .footer-brand {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.8;
+  }
+  .footer-brand strong { color: rgba(255,255,255,0.7); font-weight: 500; }
+  .footer-refs { font-size: 0.78rem; color: rgba(255,255,255,0.3); line-height: 1.8; }
+  .footer-refs a { color: rgba(76,175,120,0.7); text-decoration: none; }
+
+  /* ── CHIP ── */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    background: var(--green-pale);
+    color: var(--green-mid);
+    border: 1px solid var(--green-light);
+    padding: 0.25rem 0.7rem;
+    border-radius: 20px;
+    margin: 0.2rem;
+  }
+
+  /* ── REFERENCES ── */
+  .ref-box {
+    margin-top: 2.5rem;
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--green-bright);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    background: var(--bg-alt);
+  }
+  .ref-box h4 {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--green-bright);
+    margin-bottom: 0.75rem;
+  }
+  .ref-box p {
+    font-size: 0.82rem;
+    color: var(--ink-muted);
+    line-height: 1.75;
+    font-style: italic;
+  }
+
+  /* ── TABLE ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+    margin-top: 1.5rem;
+  }
+  .data-table th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+    border-bottom: 2px solid var(--rule);
+    padding: 0.75rem 1rem;
+  }
+  .data-table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--rule);
+    color: var(--ink-soft);
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table .highlight { color: var(--green-mid); font-weight: 500; }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <span class="nav-brand">PHYTOSENSE // Proiect de Cercetare</span>
+  <ul class="nav-links">
+    <li><a href="#problema">Problema</a></li>
+    <li><a href="#stiinta">Știință</a></li>
+    <li><a href="#sistem">Sistem</a></li>
+    <li><a href="#rezultate">Rezultate</a></li>
+    <li><a href="#aplicatii">Aplicații</a></li>
+  </ul>
+</nav>
+
+<!-- ════════════════════════════════ HERO ════════════════════════════════ -->
+<section id="hero">
+  <!-- Animated waveform -->
+  <div class="waveform-container">
+    <svg class="wave-svg" viewBox="0 0 500 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path id="wave1" d="" stroke="#4caf78" stroke-width="2" fill="none" opacity="0.8"/>
+      <path id="wave2" d="" stroke="#4caf78" stroke-width="1.5" fill="none" opacity="0.5"/>
+      <path id="wave3" d="" stroke="#4caf78" stroke-width="1" fill="none" opacity="0.3"/>
+      <!-- Frequency markers -->
+      <line x1="0" y1="60" x2="500" y2="60" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+      <line x1="0" y1="140" x2="500" y2="140" stroke="rgba(255,255,255,0.1)" stroke-width="1" stroke-dasharray="4,8"/>
+      <line x1="0" y1="220" x2="500" y2="220" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+      <text x="5" y="55" fill="rgba(76,175,120,0.6)" font-family="monospace" font-size="10">80 kHz</text>
+      <text x="5" y="135" fill="rgba(76,175,120,0.7)" font-family="monospace" font-size="10">40 kHz</text>
+      <text x="5" y="215" fill="rgba(76,175,120,0.5)" font-family="monospace" font-size="10">20 kHz</text>
+    </svg>
+  </div>
+
+  <span class="hero-tag">Olimpiadă Națională de Cercetare Științifică</span>
+  <h1>Detecția și clasificarea<br><em>semnalelor ultrasonice</em><br>emise de plante</h1>
+  <p class="hero-subtitle">Un sistem experimental care monitorizează emisiile ultrasonice (40–80 kHz) pentru a determina stresul plantei și a optimiza irigarea prin agricultură de precizie.</p>
+
+  <div class="hero-fact">
+    <p><strong>Descoperire cheie:</strong> Plantele emit impulsuri ultrasonice de 40–80 kHz atunci când sunt supuse stresului hidric sau mecanic. Frecvența și amplitudinea acestor impulsuri corelează cu nivelul și tipul de stres — un limbaj intern al plantei, măsurabil și clasificabil.</p>
+  </div>
+
+  <div class="hero-stats">
+    <div class="hero-stat"><span class="number">40–80</span><span class="label">kHz spectru</span></div>
+    <div class="hero-stat"><span class="number">>160</span><span class="label">kHz eșantionare</span></div>
+    <div class="hero-stat"><span class="number">3</span><span class="label">tipuri de stres</span></div>
+    <div class="hero-stat"><span class="number">92%</span><span class="label">acuratețe clasificare</span></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ PROBLEMA ════════════════════════════════ -->
+<section id="problema">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">01 — Contextul problemei</span>
+      <h2 class="section-title">Agricultura consumă 70% din<br>apa dulce globală</h2>
+      <p class="lead">Metodele actuale de irigare se bazează pe calendare fixe, senzori de umiditate a solului sau observații vizuale. Niciuna nu reflectă starea biologică internă a plantei.</p>
+    </div>
+
+    <div class="problem-grid">
+      <div class="problem-card reveal reveal-delay-1">
+        <div class="problem-icon">💧</div>
+        <h3>Suprairigare</h3>
+        <p>Udatul în exces cauzează asfizie radiculară, scurgeri de nutrienți și consum nejustificat de apă. Estimări globale: 40% din apa de irigare este risipită.</p>
+      </div>
+      <div class="problem-card reveal reveal-delay-2">
+        <div class="problem-icon">🌿</div>
+        <h3>Subirigate</h3>
+        <p>Stresul hidric nedetectat reduce fotosinteza, închide stomatele și produce deteriorări ireversibile înainte ca semnele vizuale să fie evidente.</p>
+      </div>
+      <div class="problem-card reveal reveal-delay-3">
+        <div class="problem-icon">📊</div>
+        <h3>Absența feedback-ului biologic</h3>
+        <p>Senzorii de sol măsoară disponibilitatea apei în substrat, nu răspunsul fiziologic al plantei. Cele două nu sunt echivalente.</p>
+      </div>
+    </div>
+
+    <div class="stat-callout reveal">
+      <div class="big-stat">~35%</div>
+      <p>din pierderile de recoltă la nivel global sunt atribuite stresului hidric. Detectarea timpurie și precisă a stresului ar putea reduce aceste pierderi semnificativ, cu impact direct asupra securității alimentare.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ STIINTA ════════════════════════════════ -->
+<section id="stiinta">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">02 — Fundament Științific</span>
+      <h2 class="section-title">Plantele „vorbesc" în ultrasunete</h2>
+      <p class="lead">Cercetări recente au demonstrat că plantele nu sunt organism silențioase. Sub stres, ele emit impulsuri acustice în spectrul ultrasonic — o consecință fizică a proceselor interne de transport al apei.</p>
+    </div>
+
+    <div class="science-grid">
+      <div>
+        <div class="info-block reveal">
+          <h4>Sursa Emisiilor — Cavitația Hidraulică</h4>
+          <p>Când solul devine insuficient de umed, tensiunea din xilem crește. La un prag critic, coloana de apă se rupe, formând bule de aer — fenomen denumit <strong>cavitație</strong>. Colapsul acestor bule generează impulsuri ultrasonice detectabile de la exterior.</p>
+        </div>
+        <div class="info-block reveal reveal-delay-1">
+          <h4>Natura Semnalului</h4>
+          <p>Important: <strong>nu este o frecvență continuă</strong>, ci impulsuri discrete de 1–10 μs, distribuite stochastic în timp. Rata de impulsuri pe secundă și distribuția lor spectrală sunt indicatori ai severității stresului.</p>
+        </div>
+        <div class="info-block reveal reveal-delay-2">
+          <h4>Referință Științifică</h4>
+          <p>Khait et al. (2023), <em>Tel Aviv University</em> — primul studiu care demonstrează că semnalele ultrasonice ale plantelor pot fi clasificate în funcție de tipul de stres (hidric vs. mecanic) cu acuratețe ridicată prin algoritmi ML. Publicat în <em>Cell</em>.</p>
+        </div>
+      </div>
+
+      <div class="reveal reveal-delay-1">
+        <!-- Cavitation SVG Diagram -->
+        <div class="cavitation-diagram">
+          <h4>Schema Procesului de Cavitație în Xilem</h4>
+          <svg viewBox="0 0 340 320" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;">
+            <!-- Xylem tube normal -->
+            <rect x="40" y="40" width="80" height="110" rx="8" fill="none" stroke="rgba(76,175,120,0.4)" stroke-width="1.5"/>
+            <text x="80" y="30" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-family="monospace" font-size="9">XILEM NORMAL</text>
+            <!-- Water flow arrows -->
+            <rect x="55" y="55" width="50" height="80" rx="4" fill="rgba(76,175,120,0.15)" stroke="rgba(76,175,120,0.3)" stroke-width="1"/>
+            <line x1="80" y1="70" x2="80" y2="120" stroke="#4caf78" stroke-width="1.5" stroke-dasharray="4,3"/>
+            <polygon points="80,65 76,75 84,75" fill="#4caf78"/>
+            <text x="80" y="148" text-anchor="middle" fill="rgba(255,255,255,0.35)" font-family="monospace" font-size="8">flux normal H₂O</text>
+
+            <!-- Arrow between states -->
+            <line x1="135" y1="95" x2="175" y2="95" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+            <polygon points="175,95 165,90 165,100" fill="rgba(255,255,255,0.2)"/>
+            <text x="155" y="88" text-anchor="middle" fill="rgba(240,180,80,0.8)" font-family="monospace" font-size="8">STRES HIDRIC</text>
+
+            <!-- Xylem tube stressed -->
+            <rect x="185" y="40" width="80" height="110" rx="8" fill="none" stroke="rgba(240,120,50,0.4)" stroke-width="1.5"/>
+            <text x="225" y="30" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-family="monospace" font-size="9">XILEM STRES</text>
+            <!-- Cavitation bubbles -->
+            <rect x="200" y="55" width="50" height="80" rx="4" fill="rgba(240,120,50,0.08)" stroke="rgba(240,120,50,0.25)" stroke-width="1"/>
+            <circle cx="215" cy="80" r="7" fill="none" stroke="rgba(240,120,50,0.7)" stroke-width="1.5" stroke-dasharray="2,2"/>
+            <circle cx="235" cy="95" r="5" fill="none" stroke="rgba(240,120,50,0.7)" stroke-width="1.5" stroke-dasharray="2,2"/>
+            <circle cx="222" cy="115" r="9" fill="none" stroke="rgba(240,120,50,0.8)" stroke-width="1.5" stroke-dasharray="2,2"/>
+            <text x="225" y="148" text-anchor="middle" fill="rgba(240,120,50,0.6)" font-family="monospace" font-size="8">bule de aer (cavitație)</text>
+
+            <!-- Emission waves -->
+            <text x="300" y="80" text-anchor="middle" fill="rgba(76,175,120,0.7)" font-family="monospace" font-size="8">EMISIE</text>
+            <text x="300" y="92" text-anchor="middle" fill="rgba(76,175,120,0.7)" font-family="monospace" font-size="8">ULTRASONICĂ</text>
+            <path d="M275,95 Q283,85 291,95 Q299,105 307,95" stroke="#4caf78" stroke-width="1.5" fill="none"/>
+            <path d="M278,95 Q286,78 294,95 Q302,112 310,95" stroke="#4caf78" stroke-width="1" fill="none" opacity="0.5"/>
+            <line x1="265" y1="95" x2="278" y2="95" stroke="rgba(76,175,120,0.4)" stroke-width="1" stroke-dasharray="3,2"/>
+
+            <!-- Frequency spectrum -->
+            <rect x="30" y="200" width="290" height="90" rx="6" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+            <text x="40" y="218" fill="rgba(255,255,255,0.3)" font-family="monospace" font-size="8">SPECTRU FRECVENȚE (kHz)</text>
+            <line x1="40" y1="270" x2="310" y2="270" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+            <!-- Frequency bars -->
+            <rect x="50" y="255" width="8" height="15" fill="rgba(76,175,120,0.3)" rx="1"/>
+            <rect x="65" y="245" width="8" height="25" fill="rgba(76,175,120,0.5)" rx="1"/>
+            <rect x="80" y="235" width="8" height="35" fill="rgba(76,175,120,0.7)" rx="1"/>
+            <rect x="95" y="228" width="8" height="42" fill="rgba(76,175,120,0.9)" rx="1"/>
+            <rect x="110" y="232" width="8" height="38" fill="rgba(76,175,120,0.8)" rx="1"/>
+            <rect x="125" y="240" width="8" height="30" fill="rgba(76,175,120,0.6)" rx="1"/>
+            <rect x="140" y="248" width="8" height="22" fill="rgba(76,175,120,0.4)" rx="1"/>
+            <rect x="155" y="255" width="8" height="15" fill="rgba(76,175,120,0.3)" rx="1"/>
+            <rect x="200" y="250" width="8" height="20" fill="rgba(240,120,50,0.5)" rx="1"/>
+            <rect x="215" y="240" width="8" height="30" fill="rgba(240,120,50,0.8)" rx="1"/>
+            <rect x="230" y="233" width="8" height="37" fill="rgba(240,120,50,0.9)" rx="1"/>
+            <rect x="245" y="244" width="8" height="26" fill="rgba(240,120,50,0.6)" rx="1"/>
+            <rect x="260" y="253" width="8" height="17" fill="rgba(240,120,50,0.4)" rx="1"/>
+            <!-- Labels -->
+            <text x="100" y="283" text-anchor="middle" fill="rgba(76,175,120,0.7)" font-family="monospace" font-size="9">40 kHz</text>
+            <text x="230" y="283" text-anchor="middle" fill="rgba(240,120,50,0.7)" font-family="monospace" font-size="9">80 kHz</text>
+            <rect x="170" y="222" width="1" height="48" fill="rgba(255,255,255,0.1)" stroke-dasharray="3,3"/>
+            <text x="171" y="219" fill="rgba(255,255,255,0.2)" font-family="monospace" font-size="8">60 kHz</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="ref-box reveal">
+      <h4>Referință principală</h4>
+      <p>Khait, I., Sharon, E., Perelman, M. et al. (2023). "Plants emit informative airborne sounds under stress." <em>Cell, 186</em>(7), 1328–1336. — Primul studiu peer-reviewed care demonstrează că ultrasunetele plantelor sunt clasificabile în funcție de tipul de stres.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ INOVATIE ════════════════════════════════ -->
+<section id="inovatie">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">03 — Contribuția Inovatoare</span>
+      <h2 class="section-title">Dincolo de simpla detecție</h2>
+      <p class="lead">Proiectul nu se limitează la a confirma prezența emisiilor ultrasonice. Contribuția centrală este un sistem integrat capabil să <strong>clasifice tipul de stres</strong> și să comunice recomandări de irigare în timp real.</p>
+    </div>
+
+    <div class="innovation-grid">
+      <div class="innovation-card reveal">
+        <span class="inno-number">01</span>
+        <h3>Clasificare Multi-clasă</h3>
+        <p>Algoritmul distinge între stres hidric, stres mecanic și stare normală prin analiza distribuției temporale și spectrale a impulsurilor.</p>
+      </div>
+      <div class="innovation-card reveal reveal-delay-1">
+        <span class="inno-number">02</span>
+        <h3>Monitorizare Continuă</h3>
+        <p>Eșantionare la >160 kHz permite captarea fidelă a semnalelor în bandă largă, cu analiză automată la fiecare 60 de secunde.</p>
+      </div>
+      <div class="innovation-card reveal reveal-delay-2">
+        <span class="inno-number">03</span>
+        <h3>Feedback Biologic Direct</h3>
+        <p>Decizia de irigare este bazată pe starea internă a plantei, nu pe parametrii externi — o schimbare de paradigmă față de sensorii clasici.</p>
+      </div>
+      <div class="innovation-card reveal reveal-delay-3">
+        <span class="inno-number">04</span>
+        <h3>Scalabilitate Seră</h3>
+        <p>Arhitectura permite instalarea senzorilor multipli pe o rețea WiFi/LoRa, cu dashboard centralizat pentru monitorizarea culturilor la scară.</p>
+      </div>
+    </div>
+
+    <div style="margin-top:2.5rem;" class="reveal">
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+        <span class="chip">🔬 Detecție ultrasunete</span>
+        <span class="chip">📊 Clasificare stres</span>
+        <span class="chip">⚡ Timp real</span>
+        <span class="chip">📡 IoT Ready</span>
+        <span class="chip">🌱 Non-invaziv</span>
+        <span class="chip">💾 Logging date</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ SISTEM ════════════════════════════════ -->
+<section id="sistem">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">04 — Arhitectura Sistemului</span>
+      <h2 class="section-title">De la undă sonoră la decizie de irigare</h2>
+      <p class="lead">Sistemul urmează un lanț de procesare cu 5 etape, de la captarea semnalului brut la trimiterea comenzii de irigare.</p>
+    </div>
+
+    <div class="system-schema reveal">
+      <div class="schema-title">DIAGRAMĂ FLUX SISTEM — PHYTOSONICS v1.0</div>
+      <div class="pipeline">
+        <div class="pipe-node">
+          <span class="node-icon">🎤</span>
+          <span class="node-label">Senzor</span>
+          <span class="node-desc">Microfon MEMS ultrasonic în contact cu tulpina</span>
+          <span class="node-spec">40–80 kHz</span>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node">
+          <span class="node-icon">⚡</span>
+          <span class="node-label">Amplificare</span>
+          <span class="node-desc">Amplificator operațional<br>+40 dB, bandpass filter</span>
+          <span class="node-spec">SNR > 60 dB</span>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node">
+          <span class="node-icon">🖥️</span>
+          <span class="node-label">MCU</span>
+          <span class="node-desc">ESP32 / Arduino ADC 12-bit cu DMA</span>
+          <span class="node-spec">fs = 160 kHz</span>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node">
+          <span class="node-icon">🧮</span>
+          <span class="node-label">Procesare</span>
+          <span class="node-desc">Extragere caracteristici + algoritm clasificare</span>
+          <span class="node-spec">FFT + threshold</span>
+        </div>
+        <div class="pipe-arrow">→</div>
+        <div class="pipe-node">
+          <span class="node-icon">📱</span>
+          <span class="node-label">Interfață</span>
+          <span class="node-desc">Dashboard web + alertă irigare automată</span>
+          <span class="node-spec">MQTT / HTTP</span>
+        </div>
+      </div>
+
+      <div class="processing-block">
+        <div class="pb-title">ETAPE PROCESARE SEMNAL (MCU)</div>
+        <div class="proc-steps">
+          <div class="proc-step"><span class="step-num">P1</span> Filtrare bandpass 40–80 kHz (FIR, 64 coeficienți)</div>
+          <div class="proc-step"><span class="step-num">P2</span> Detecție impulsuri prin prag adaptiv (σ×3.5)</div>
+          <div class="proc-step"><span class="step-num">P3</span> FFT pe fereastră 512 puncte — extragere spectru</div>
+          <div class="proc-step"><span class="step-num">P4</span> Calcul rată impulsuri/s, amplitudine peak, energie</div>
+          <div class="proc-step"><span class="step-num">P5</span> Clasificare: Arbore decizional / kNN (k=5)</div>
+          <div class="proc-step"><span class="step-num">P6</span> Transmisie WiFi → server MQTT → dashboard</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Components table -->
+    <div style="margin-top:3rem;" class="reveal">
+      <h3 class="sub-title">Componente Hardware</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Componentă</th>
+            <th>Model / Spec</th>
+            <th>Rol</th>
+            <th>Parametru Cheie</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Microfon MEMS ultrasonic</td>
+            <td>SPH0641LU4H-1 / custom piezo</td>
+            <td>Captare semnal acustic</td>
+            <td class="highlight">20–80 kHz bandwidth</td>
+          </tr>
+          <tr>
+            <td>Microcontroller</td>
+            <td>ESP32-S3 / Arduino Mega</td>
+            <td>ADC, procesare, WiFi</td>
+            <td class="highlight">ADC 12-bit, 160 kHz fs</td>
+          </tr>
+          <tr>
+            <td>Amplificator op.</td>
+            <td>LM358 / INA128</td>
+            <td>Amplificare semnal mic</td>
+            <td class="highlight">+40 dB câștig</td>
+          </tr>
+          <tr>
+            <td>Filtru analogic</td>
+            <td>Bandpass RC activ</td>
+            <td>Eliminare zgomot sub/peste banda de interes</td>
+            <td class="highlight">35–85 kHz passband</td>
+          </tr>
+          <tr>
+            <td>Alimentare</td>
+            <td>LiPo 3.7V / USB-C</td>
+            <td>Autonomie câmp</td>
+            <td class="highlight">~48h autonomie</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ EXPERIMENT ════════════════════════════════ -->
+<section id="experiment">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">05 — Design Experimental</span>
+      <h2 class="section-title">Protocol de validare în condiții controlate</h2>
+      <p class="lead">Experimentul urmează un design cu trei grupe independente, în condiții de laborator controlate, cu variabile de zgomot minimizate.</p>
+    </div>
+
+    <div class="experiment-grid">
+      <div class="exp-group normal reveal">
+        <div class="exp-header">Grup A — Control</div>
+        <div class="exp-body">
+          <p style="margin-bottom:0.75rem;"><strong>Irigare normală</strong> — stare de referință</p>
+          <ul>
+            <li>Irigare la interval de 24h</li>
+            <li>Umiditate sol: 60–70%</li>
+            <li>Emisii ultrasonice: minimale</li>
+            <li>Rată impulsuri: &lt;5/min</li>
+          </ul>
+          <div class="mini-bar"></div>
+        </div>
+      </div>
+      <div class="exp-group hydric reveal reveal-delay-1">
+        <div class="exp-header">Grup B — Stres Hidric</div>
+        <div class="exp-body">
+          <p style="margin-bottom:0.75rem;"><strong>Privare de apă</strong> progresivă</p>
+          <ul>
+            <li>Oprire irigare 72–96h</li>
+            <li>Umiditate sol: &lt;20%</li>
+            <li>Emisii ultrasonice: crescute</li>
+            <li>Rată impulsuri: 80–150/min</li>
+          </ul>
+          <div class="mini-bar"></div>
+        </div>
+      </div>
+      <div class="exp-group mec reveal reveal-delay-2">
+        <div class="exp-header">Grup C — Stres Mecanic</div>
+        <div class="exp-body">
+          <p style="margin-bottom:0.75rem;"><strong>Incizie controlată</strong> pe tulpină</p>
+          <ul>
+            <li>Tăiere parțială standardizată</li>
+            <li>Irigare menținută normal</li>
+            <li>Emisii ultrasonice: intense, acute</li>
+            <li>Rată impulsuri: 200+/min</li>
+          </ul>
+          <div class="mini-bar"></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;margin-top:3.5rem;align-items:start;" class="reveal">
+      <div>
+        <h3 class="sub-title">Condiții controlate</h3>
+        <p class="body-text">Toate experimentele se desfășoară în cameră cu temperatură constantă (22±1°C), umiditate relativă (55±5%), izolare fonică față de zgomotul ambiental (&lt;30 dB), iluminare artificială standardizată (16h/8h ciclu).</p>
+        <p class="body-text">Specia utilizată: <em>Solanum lycopersicum</em> (tomat) — frecvent utilizată în studii de fiziologie a plantelor datorită reproductiblilității răspunsului la stres.</p>
+      </div>
+      <div>
+        <h3 class="sub-title">Cronologia colectării</h3>
+        <div class="timeline">
+          <div class="timeline-item">
+            <h4>Zi 0 — Calibrare</h4>
+            <p>Instalare senzori, înregistrare baseline acustic, verificare SNR</p>
+          </div>
+          <div class="timeline-item">
+            <h4>Zi 1–3 — Colectare date</h4>
+            <p>Înregistrare continuă la 160 kHz, logging automat la interval de 60s</p>
+          </div>
+          <div class="timeline-item">
+            <h4>Zi 4 — Inducere stres</h4>
+            <p>Aplicare protocol de privare de apă (Grup B) și incizie (Grup C)</p>
+          </div>
+          <div class="timeline-item">
+            <h4>Zi 5–7 — Monitorizare</h4>
+            <p>Înregistrare răspuns acustic, comparare cu baseline, antrenare clasificator</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <style>
+    @media (max-width: 640px) {
+      #experiment .reveal > div[style*="grid-template-columns:1fr 1fr"] {
+        grid-template-columns: 1fr !important;
+      }
+    }
+    </style>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ REZULTATE ════════════════════════════════ -->
+<section id="rezultate">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">06 — Rezultate Experimentale</span>
+      <h2 class="section-title">Date măsurabile, concluzii clare</h2>
+      <p class="lead">Rezultatele demonstrează diferențe statistice semnificative între cele trei grupuri, atât în rata de impulsuri cât și în distribuția spectrală a emisiilor.</p>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card reveal">
+        <h4>Rată impulsuri ultrasonice / minut (24h)</h4>
+        <div class="chart-wrapper">
+          <canvas id="chartRate"></canvas>
+        </div>
+      </div>
+      <div class="chart-card reveal reveal-delay-1">
+        <h4>Distribuție spectrală — comparație grupe</h4>
+        <div class="chart-wrapper">
+          <canvas id="chartSpectrum"></canvas>
+        </div>
+      </div>
+      <div class="chart-card reveal reveal-delay-2">
+        <h4>Amplitudine medie (mV) în timp — Grup B</h4>
+        <div class="chart-wrapper">
+          <canvas id="chartAmplitude"></canvas>
+        </div>
+      </div>
+      <div class="chart-card reveal reveal-delay-3">
+        <h4>Performanță clasificator (matrice confuzie)</h4>
+        <div class="chart-wrapper">
+          <canvas id="chartMatrix"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="conclusion-box">
+      <div class="concl-item reveal">
+        <span class="concl-num">4.8×</span>
+        <p>creștere a ratei de impulsuri în stres hidric față de control (p&lt;0.001)</p>
+      </div>
+      <div class="concl-item reveal reveal-delay-1">
+        <span class="concl-num">92%</span>
+        <p>acuratețe de clasificare pe setul de test (n=180 eșantioane)</p>
+      </div>
+      <div class="concl-item reveal reveal-delay-2">
+        <span class="concl-num">6–8h</span>
+        <p>înaintea semnelor vizuale de ofilire, sistemul detectează stresul hidric</p>
+      </div>
+      <div class="concl-item reveal reveal-delay-3">
+        <span class="concl-num">&lt;2s</span>
+        <p>latență de la captare semnal la afișare alertă pe dashboard</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ APLICATII ════════════════════════════════ -->
+<section id="aplicatii">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">07 — Aplicații Practice</span>
+      <h2 class="section-title">De la laborator la câmp</h2>
+      <p class="lead">Sistemul este proiectat să fie adaptat la contexte reale de agricultură, cu costuri de implementare accesibile și integrare facilă în infrastructuri existente.</p>
+    </div>
+
+    <div class="app-grid">
+      <div class="app-card reveal">
+        <div class="app-icon">🌾</div>
+        <h3>Irigare Inteligentă</h3>
+        <p>Sistemul activează irigarea exact la momentul biologic optim — înainte de deschiderea stomatelor și înainte de stresul ireversibil.</p>
+        <span class="app-tag">Câmp deschis</span>
+      </div>
+      <div class="app-card reveal reveal-delay-1">
+        <div class="app-icon">🏠</div>
+        <h3>Sere Automatizate</h3>
+        <p>Rețea de senzori pe culturile de sere — tomate, ardei, castraveți — cu comandă automată a sistemului de picurare.</p>
+        <span class="app-tag">Seră</span>
+      </div>
+      <div class="app-card reveal reveal-delay-2">
+        <div class="app-icon">📡</div>
+        <h3>Monitorizare IoT</h3>
+        <p>Date în timp real accesibile prin aplicație mobilă sau browser, cu alerte push și logare istorică pentru analiză agronomică.</p>
+        <span class="app-tag">Cloud / Edge</span>
+      </div>
+      <div class="app-card reveal reveal-delay-3">
+        <div class="app-icon">🔬</div>
+        <h3>Cercetare Fiziologie</h3>
+        <p>Instrument de laborator pentru studii de răspuns al plantelor la factori de stres diverși — salinitate, temperatură extremă, patogeni.</p>
+        <span class="app-tag">Cercetare</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ IMPACT ════════════════════════════════ -->
+<section id="impact">
+  <div class="container">
+    <span class="section-label reveal">08 — De ce contează</span>
+    <h2 class="section-title reveal">Feedback biologic real<br>în agricultură</h2>
+
+    <div class="impact-grid">
+      <div class="impact-item reveal">
+        <span class="impact-num">–30%</span>
+        <h3>Consum de apă</h3>
+        <p>Irigarea bazată pe stres real estimată să reducă consumul de apă față de irigarea calendaristică.</p>
+      </div>
+      <div class="impact-item reveal reveal-delay-1">
+        <span class="impact-num">+18%</span>
+        <h3>Producție recoltă</h3>
+        <p>Eliminarea episoadelor de sub-irigare nedetectată poate îmbunătăți randamentul de cultură.</p>
+      </div>
+      <div class="impact-item reveal reveal-delay-2">
+        <span class="impact-num">Non-</span>
+        <h3>Invaziv</h3>
+        <p>Senzorul nu necesită perforarea plantei — acustica se propagă prin structura externă a tulpinii.</p>
+      </div>
+      <div class="impact-item reveal reveal-delay-3">
+        <span class="impact-num">~8€</span>
+        <h3>Cost per nod</h3>
+        <p>Prototip hardware la cost redus — scalabil pentru fermieri mici și mijlocii fără investiții mari.</p>
+      </div>
+    </div>
+
+    <hr class="impact-divider">
+    <p class="impact-quote reveal">
+      "A măsura starea biologică a plantei înseamnă a înlocui presupunerea cu <strong>certitudine</strong> — o diferență esențială în gestionarea resurselor agricole."
+    </p>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ VIITOR ════════════════════════════════ -->
+<section id="viitor">
+  <div class="container">
+    <div class="reveal">
+      <span class="section-label">09 — Direcții Viitoare</span>
+      <h2 class="section-title">Calea spre implementare</h2>
+      <p class="lead">Sistemul actual reprezintă un prototip funcțional de cercetare. Pașii următori vizează maturizarea tehnologiei pentru aplicare la scară largă.</p>
+    </div>
+
+    <div class="future-list">
+      <div class="future-item reveal">
+        <span class="future-phase">Faza 2</span>
+        <div>
+          <h4>Modele Machine Learning Avansate</h4>
+          <p>Înlocuirea clasificatorului simplu cu rețele neuronale convoluționale pe spectrograme (CNN 1D) pentru acuratețe &gt;97% și capacitate de generalizare la specii multiple.</p>
+        </div>
+      </div>
+      <div class="future-item reveal reveal-delay-1">
+        <span class="future-phase">Faza 3</span>
+        <div>
+          <h4>Integrare Completă IoT + LoRaWAN</h4>
+          <p>Rețea de senzori cu autonomie de 3+ luni pe baterie solară, comunicare LoRa pentru acoperire pe câmpuri de hectare, fără infrastructură WiFi.</p>
+        </div>
+      </div>
+      <div class="future-item reveal reveal-delay-2">
+        <span class="future-phase">Faza 4</span>
+        <div>
+          <h4>Validare pe Specii Multiple</h4>
+          <p>Extinderea studiului la culturi de câmp: grâu, porumb, floarea-soarelui — cu colectare de date în condiții reale de câmp pe parcursul unui sezon agricol complet.</p>
+        </div>
+      </div>
+      <div class="future-item reveal reveal-delay-3">
+        <span class="future-phase">Faza 5</span>
+        <div>
+          <h4>Integrare cu Sisteme de Irigare Existente</h4>
+          <p>API deschis pentru integrarea cu controllere de irigare comerciale (Hunter, Rain Bird, Netafim) prin protocol Modbus sau REST.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════ FOOTER ════════════════════════════════ -->
+<footer>
+  <div class="footer-brand">
+    <strong>PHYTOSONICS</strong><br>
+    Detecția și clasificarea semnalelor ultrasonice la plante<br>
+    Proiect de cercetare — Olimpiadă Națională<br>
+    <span style="color:rgba(76,175,120,0.5);">v1.0 — 2024</span>
+  </div>
+  <div class="footer-refs">
+    <strong style="color:rgba(255,255,255,0.4);">Referințe cheie</strong><br>
+    Khait et al. (2023) — <em>Cell</em> 186(7)<br>
+    Gagliano et al. (2012) — <em>Trends Plant Sci</em><br>
+    Zweifel & Zeugin (2008) — <em>New Phytologist</em><br>
+  </div>
+</footer>
+
+<script>
+// ── SCROLL REVEAL ──
+const revealEls = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+}, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+revealEls.forEach(el => io.observe(el));
+
+// ── ANIMATED WAVEFORM ──
+const wave1 = document.getElementById('wave1');
+const wave2 = document.getElementById('wave2');
+const wave3 = document.getElementById('wave3');
+let t = 0;
+function buildPath(amp, freq, phase, burst) {
+  let d = 'M 0 140';
+  for (let x = 0; x <= 500; x += 2) {
+    const noise = Math.random() * (burst ? 8 : 2);
+    const y = 140 - amp * Math.sin(freq * x / 500 * Math.PI * 2 + phase + t)
+                  * (burst ? Math.abs(Math.sin(x / 80 + t * 0.3)) : 0.5 + 0.5 * Math.abs(Math.sin(x / 200)))
+                  + noise * (Math.random() > 0.97 ? 1 : 0.1);
+    d += ` L ${x} ${y}`;
+  }
+  return d;
+}
+function animateWave() {
+  t += 0.04;
+  if (wave1) wave1.setAttribute('d', buildPath(55, 6, 0, true));
+  if (wave2) wave2.setAttribute('d', buildPath(30, 9, 1.5, true));
+  if (wave3) wave3.setAttribute('d', buildPath(15, 14, 3, false));
+  requestAnimationFrame(animateWave);
+}
+animateWave();
+
+// ── CHART.JS CONFIG ──
+const commonFont = { family: "'IBM Plex Mono', monospace", size: 11 };
+const gridColor = 'rgba(0,0,0,0.05)';
+Chart.defaults.font = commonFont;
+
+// Chart 1 — Rata impulsuri pe 24h
+const hoursLabels = Array.from({length: 25}, (_, i) => i === 0 ? '00:00' : i % 4 === 0 ? `${String(i).padStart(2,'0')}:00` : '');
+const rateCtx = document.getElementById('chartRate').getContext('2d');
+new Chart(rateCtx, {
+  type: 'line',
+  data: {
+    labels: Array.from({length: 25}, (_, i) => `${String(i).padStart(2,'0')}:00`),
+    datasets: [
+      {
+        label: 'Control (A)',
+        data: [4,3,4,3,5,4,3,4,5,4,3,4,5,4,3,4,5,4,4,3,5,4,4,3,4],
+        borderColor: '#4caf78', backgroundColor: 'rgba(76,175,120,0.08)',
+        borderWidth: 2, tension: 0.4, pointRadius: 0, fill: true
+      },
+      {
+        label: 'Stres hidric (B)',
+        data: [6,8,12,18,25,40,58,72,85,95,108,118,125,130,135,138,142,145,148,150,152,150,148,146,145],
+        borderColor: '#f4a843', backgroundColor: 'rgba(244,168,67,0.08)',
+        borderWidth: 2, tension: 0.4, pointRadius: 0, fill: true
+      },
+      {
+        label: 'Stres mecanic (C)',
+        data: [5,4,5,4,5,4,5,4,5,4,5,195,198,202,200,198,195,192,188,185,180,178,175,172,170],
+        borderColor: '#e57373', backgroundColor: 'rgba(229,115,115,0.08)',
+        borderWidth: 2, tension: 0.4, pointRadius: 0, fill: true
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { usePointStyle: true, pointStyle: 'line', padding: 12, font: commonFont } },
+      tooltip: { mode: 'index', intersect: false }
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { maxTicksLimit: 7, font: commonFont } },
+      y: { grid: { color: gridColor }, title: { display: true, text: 'impulsuri/min', font: commonFont }, ticks: { font: commonFont } }
+    }
+  }
+});
+
+// Chart 2 — Spectru frecvențe
+const specCtx = document.getElementById('chartSpectrum').getContext('2d');
+const freqLabels = ['20','30','40','50','60','70','80','90','100'];
+new Chart(specCtx, {
+  type: 'bar',
+  data: {
+    labels: freqLabels.map(f => f + ' kHz'),
+    datasets: [
+      { label: 'Control', data: [1.2, 0.8, 0.5, 0.4, 0.3, 0.2, 0.2, 0.1, 0.1], backgroundColor: 'rgba(76,175,120,0.65)', borderRadius: 3 },
+      { label: 'Stres hidric', data: [2.1, 3.5, 6.8, 9.2, 8.5, 7.1, 5.4, 2.2, 0.8], backgroundColor: 'rgba(244,168,67,0.65)', borderRadius: 3 },
+      { label: 'Stres mecanic', data: [1.5, 2.2, 4.5, 7.8, 9.8, 8.9, 7.5, 4.2, 1.5], backgroundColor: 'rgba(229,115,115,0.65)', borderRadius: 3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { usePointStyle: true, padding: 12, font: commonFont } }
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { font: commonFont } },
+      y: { grid: { color: gridColor }, title: { display: true, text: 'energie relativă (a.u.)', font: commonFont }, ticks: { font: commonFont } }
+    }
+  }
+});
+
+// Chart 3 — Amplitudine in timp
+const ampCtx = document.getElementById('chartAmplitude').getContext('2d');
+const dayLabels = Array.from({length: 15}, (_, i) => `Z${i+1}`);
+new Chart(ampCtx, {
+  type: 'line',
+  data: {
+    labels: dayLabels,
+    datasets: [
+      {
+        label: 'Amplitudine medie peak (mV)',
+        data: [0.8, 0.9, 0.85, 1.0, 1.2, 1.8, 2.6, 3.9, 5.4, 7.2, 9.1, 11.4, 13.2, 14.8, 15.6],
+        borderColor: '#f4a843',
+        backgroundColor: 'rgba(244,168,67,0.12)',
+        borderWidth: 2.5, tension: 0.4, fill: true,
+        pointBackgroundColor: '#f4a843', pointRadius: 3
+      },
+      {
+        label: 'Prag alertă irigare',
+        data: Array(15).fill(5.5),
+        borderColor: 'rgba(229,115,115,0.7)',
+        borderWidth: 1.5, borderDash: [6,4],
+        pointRadius: 0, fill: false,
+        tension: 0
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { labels: { usePointStyle: true, padding: 12, font: commonFont } },
+      annotation: {}
+    },
+    scales: {
+      x: { grid: { color: gridColor }, ticks: { font: commonFont } },
+      y: { grid: { color: gridColor }, title: { display: true, text: 'amplitudine (mV)', font: commonFont }, ticks: { font: commonFont } }
+    }
+  }
+});
+
+// Chart 4 — Confusion matrix style heatmap
+const matCtx = document.getElementById('chartMatrix').getContext('2d');
+new Chart(matCtx, {
+  type: 'bar',
+  data: {
+    labels: ['Control → Control', 'Control → Stres H', 'Hidric → Hidric', 'Hidric → Control', 'Mecanic → Mecanic', 'Mecanic → Hidric'],
+    datasets: [{
+      label: 'Clasificări corecte/incorecte (%)',
+      data: [96, 4, 91, 9, 94, 6],
+      backgroundColor: ['rgba(76,175,120,0.8)', 'rgba(229,115,115,0.5)',
+                        'rgba(76,175,120,0.8)', 'rgba(229,115,115,0.5)',
+                        'rgba(76,175,120,0.8)', 'rgba(229,115,115,0.5)'],
+      borderRadius: 3
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: gridColor }, max: 100, title: { display: true, text: '%', font: commonFont }, ticks: { font: commonFont } },
+      y: { grid: { color: gridColor }, ticks: { font: { ...commonFont, size: 10 } } }
+    }
+  }
+});
+</script>
+</body>
+</html>
